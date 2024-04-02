@@ -1,7 +1,7 @@
 <div align="center">
-  <h1 align="center">Headless-ChatGPT</h1>
+  <h1 align="center">ChatGPT-without-login</h1>
   <img src="https://github.com/mapluisch/Headless-ChatGPT/assets/31780571/c2f23c9d-4696-4ed1-a18a-12d2d7b05172">
-  <p align="center"><em>Python sample for accessing ChatGPT without API. Only for educational purposes.</em></p>
+  <p align="center"><em>Python sample for accessing ChatGPT (3.5) without an account or API access. Only for educational purposes.</em></p>
 </div>
 <hr>
 
