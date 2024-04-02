@@ -15,28 +15,42 @@ This sample relies on `pyppeteer`, a headless chromium library.
 
 Install it using `pip install pyppeteer` (or `pip3`, depending on your setup).
 
-Then, clone this repo and run `python3 gpt.py` with the arguments described below.
-
 ## Usage
-### Arguments
+
+### Calling it from your own script
+With my `gpt.py` in the same directory, you can call it using some prompt using this example:
+```python
+import asyncio
+from gpt import GPT
+
+async def run_session():
+    session = GPT(prompt="Tell me a joke.", streaming=True)
+    
+    await session.start() 
+    
+    # send additional prompts and handle them optionally
+    # await session.handle_prompt("Explain the joke.")
+
+    await session.close()
+
+asyncio.run(run_session())
+```
+
+The first prompt of a *new* session always takes a bit longer, as the headless browser has to init. Subsequent prompts are handled as fast as you know it from the typical GPT browser UI.
+
+### CLI Arguments
+You can also chat with GPT using CLI; just call `python3 gpt.py` with the following args:
+
 - `-p`, `--prompt` (required)
   - the initial prompt text to send to ChatGPT.
   - **type**: `str`
   
-- `-s`, `--streaming`
-  - if true, the script prints out the response from ChatGPT as it's being generated, creating a "streaming" effect.
-  - **type**: bool (`store_true`)
-  - **default**: false
-  
-- `-c`, `--conversation`
-  - if true, allows the user to send new prompts after receiving a response, facilitating an ongoing conversation with GPT.
+- `-ns`, `--no-streaming`
+  - if true, the script doesn't print GPT's response in chunks ("streaming"-esque), but rather waits until it is fully typed out before printing it.
   - **type**: bool (`store_true`)
   - **default**: false
 
-For one-off queries, simply call the script with your prompt as input argument `-p / --prompt`, i.e., `python3 gpt.py -p "Here goes your prompt."`.
-
-Add the other arguments if you want "streaming"-esque responses and / or conversations.
-
+A minimal example for a streaming-based conversation would be `python3 gpt.py -p "Hello, GPT"`.
 
 ## ToDo
 - [x] support response streaming
