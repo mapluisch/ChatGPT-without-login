@@ -47,4 +47,4 @@ Add the other arguments if you want "streaming"-esque responses and / or convers
 ### Disclaimer
 *This python implementation is only meant for educational purposes. Please use OpenAI's API for requests.*
 
-Also, this is a barebones example and still WIP. 
+Also, this is a barebones example and still WIP - if you find an issue / bug, please report it 😊
