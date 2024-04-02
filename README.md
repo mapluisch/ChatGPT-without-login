@@ -1,8 +1,12 @@
-<h1 align="center">Headless-ChatGPT</h1>
-<p align="center"><em>Python sample on how to access ChatGPT without API. Only for educational purposes.</em></p>
+<div align="center">
+  <h1 align="center">Headless-ChatGPT</h1>
+  <img src="https://github.com/mapluisch/Headless-ChatGPT/assets/31780571/c2f23c9d-4696-4ed1-a18a-12d2d7b05172">
+  <p align="center"><em>Python sample for accessing ChatGPT without API. Only for educational purposes.</em></p>
+</div>
+<hr>
 
 ## Heads-up
-[OpenAI just announced instant access to ChatGPT 3.5 without signing up](https://openai.com/blog/start-using-chatgpt-instantly); this repo contains a python script for programmatic instant access.
+[OpenAI just announced instant access to ChatGPT 3.5 without signing up](https://openai.com/blog/start-using-chatgpt-instantly); this repo contains a python script for programmatic instant access, i.e., headless chats with ChatGPT via https://chat.openai.com (without signing up or requiring API keys).
 
 Instant access is currently rolling out and (based on some quick tests of mine) is currently only available in the US and Canada (IP-based).
 
@@ -27,7 +31,7 @@ Then, clone this repo and run `python3 gpt.py` with the arguments described belo
 - `-c`, `--conversation`
   - if true, allows the user to send new prompts after receiving a response, facilitating an ongoing conversation with GPT.
   - **type**: bool (`store_true`)
-  - **Default**: false
+  - **default**: false
 
 For one-off queries, simply call the script with your prompt as input argument `-p / --prompt`, i.e., `python3 gpt.py -p "Here goes your prompt."`.
 
