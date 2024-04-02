@@ -18,7 +18,9 @@ Instant access is currently rolling out and (based on some quick tests of mine) 
 ## Python
 
 ### Setup / Dependencies
-This project relies on `pyppeteer`, a headless chromium library.
+Grab the `gpt.py` script from within the `python` directory.
+
+The script relies on `pyppeteer`, a headless chromium library.
 
 Install it using `pip install pyppeteer` (or `pip3`, depending on your setup).
 
@@ -62,6 +64,8 @@ A minimal example for a streaming-based conversation would be `python3 gpt.py -p
 ## Node.js
 
 ### Setup / Dependencies
+Grab the `gpt.js` script from within the `nodejs` directory.
+
 The Node.js script relies on `puppeteer`, a headless chromium library, and `commander`.
 
 Install both using `npm install puppeteer commander`.
