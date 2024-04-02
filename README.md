@@ -1,5 +1,5 @@
 <div align="center">
-  <h1 align="center">Scripts to use ChatGPT without login</h1>
+  <h1 align="center">Scripts for using ChatGPT without login</h1>
   <img src="https://github.com/mapluisch/ChatGPT-without-login/assets/31780571/2852ec02-9971-409b-8050-0101c9b2e856">
   <p align="center"><em>Example for accessing ChatGPT (3.5) without an account or API access via Python. Only for educational purposes.</em></p>
 </div>
