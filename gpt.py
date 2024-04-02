@@ -22,51 +22,45 @@ async def main(prompt, streaming, conversation):
         if element:
             await element.focus()
 
-            await page.keyboard.down('Control')
-            await page.keyboard.press('A')
-            await page.keyboard.up('Control')
-            await page.keyboard.press('Backspace')
-
             await page.type('#prompt-textarea', prompt_text)
-            
-            await asyncio.sleep(0.2)
             await page.click('[data-testid="send-button"]')
-            await asyncio.sleep(1)  
+            await asyncio.sleep(1)
+            
+            is_gpt_thinking = await page.querySelector('.result-thinking')
+            if is_gpt_thinking:
+                await page.waitForSelector('.result-thinking', options={'hidden': True})
+
 
             async def textHasStoppedChanging():
                 printedLength = 0
                 previousText = ""
                 while True:
-                    currentText = await page.evaluate('''() => {
+                    gpt_chunk = await page.evaluate('''() => {
                         const messages = Array.from(document.querySelectorAll('[data-message-id]'));
                         const lastMessage = messages[messages.length - 1];
                         return lastMessage ? lastMessage.innerText : '';
                     }''')
 
                     if streaming:
-                        newChunk = currentText[printedLength:]
+                        newChunk = gpt_chunk[printedLength:]
                         print(newChunk, end='', flush=True)
                         printedLength += len(newChunk)
 
-                    if currentText == previousText:
+                    if gpt_chunk == previousText:
                         break
-                    previousText = currentText
+                    previousText = gpt_chunk
                     await asyncio.sleep(0.1)
 
             await textHasStoppedChanging()
 
             if not streaming:
-                messages_info = await page.evaluate('''() => {
+                gpt_response = await page.evaluate('''() => {
                     const messages = Array.from(document.querySelectorAll('[data-message-id]'));
-                    return messages.map(message => {
-                        const textContent = message.innerText;
-                        const messageId = message.getAttribute('data-message-id');
-                        return { messageId, textContent };
-                    });
+                    const lastMessage = messages[messages.length - 1];
+                    return lastMessage ? lastMessage.innerText : 'No messages found.';
                 }''')
 
-                for message in messages_info:
-                    print(message["textContent"])
+                print(gpt_response)
         else:
             print('Error: Could not find #prompt-textarea on the page.')
 
