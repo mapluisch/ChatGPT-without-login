@@ -11,13 +11,30 @@ This sample relies on `pyppeteer`, a headless chromium library.
 
 Install it using `pip install pyppeteer` (or `pip3`, depending on your setup).
 
-Then, simply call the script with your prompt as input argument, i.e., `python3 gpt.py -p "Here goes your prompt."`.
+## Usage
+### Arguments
+- `-p`, `--prompt` (required)
+  - the initial prompt text to send to ChatGPT.
+  - **type**: `str`
+  
+- `-s`, `--streaming`
+  - if true, the script prints out the response from ChatGPT as it's being generated, creating a "streaming" effect.
+  - **type**: bool (`store_true`)
+  - **default**: false
+  
+- `-c`, `--conversation`
+  - if true, allows the user to send new prompts after receiving a response, facilitating an ongoing conversation with GPT.
+  - **type**: bool (`store_true`)
+  - **Default**: false
 
-Right now, in this first prototype, the "chat" process is really a one-off request. I will add conversation support soon-ish.
+For one-off queries, simply call the script with your prompt as input argument `-p / --prompt`, i.e., `python3 gpt.py -p "Here goes your prompt."`.
+
+Add the other arguments if you want "streaming"-esque responses and / or conversations.
+
 
 ## ToDo
-- [ ] support response streaming
-- [ ] support conversations
+- [x] support response streaming
+- [x] support conversations
 - [ ] support different output formats (with / without IDs, json, prettify...)
 
 
