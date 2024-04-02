@@ -1,9 +1,10 @@
 <div align="center">
-  <h1 align="center">ChatGPT-without-login</h1>
-  <img src="https://github.com/mapluisch/Headless-ChatGPT/assets/31780571/c2f23c9d-4696-4ed1-a18a-12d2d7b05172">
+  <h1 align="center">Scripts to use ChatGPT without login</h1>
+  <img src="https://github.com/mapluisch/ChatGPT-without-login/assets/31780571/2852ec02-9971-409b-8050-0101c9b2e856">
   <p align="center"><em>Example for accessing ChatGPT (3.5) without an account or API access via Python. Only for educational purposes.</em></p>
 </div>
 <hr>
+
 
 ## Heads-up
 [OpenAI just announced instant access to ChatGPT 3.5 without signing up](https://openai.com/blog/start-using-chatgpt-instantly); this repo contains scripts in multiple programming languages for programmatic instant access, i.e., headless chats with ChatGPT via https://chat.openai.com (without signing up or requiring API keys).
