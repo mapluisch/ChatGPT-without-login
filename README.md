@@ -11,6 +11,8 @@ This sample relies on `pyppeteer`, a headless chromium library.
 
 Install it using `pip install pyppeteer` (or `pip3`, depending on your setup).
 
+Then, clone this repo and run `python3 gpt.py` with the arguments described below.
+
 ## Usage
 ### Arguments
 - `-p`, `--prompt` (required)
