@@ -1,6 +1,7 @@
+import time
 import asyncio
-from pyppeteer import launch
 import argparse
+from pyppeteer import launch
 
 class GPT:
     def __init__(self, prompt, streaming=True):
@@ -8,6 +9,8 @@ class GPT:
         self.streaming = streaming
         self.browser = None
         self.page = None
+        self.session_active = True
+        self.last_message_id = None
 
     async def start(self):
         self.browser = await launch(headless=True)
@@ -17,54 +20,94 @@ class GPT:
         await self.handle_prompt(self.prompt)
 
     async def handle_prompt(self, prompt_text):
-        await self.page.type('#prompt-textarea', prompt_text)
-        await self.page.click('[data-testid="send-button"]')
-        await asyncio.sleep(1)
+        prompt_textarea = await self.page.querySelector('#prompt-textarea')
+        if prompt_textarea is None:
+            print("Cannot find the prompt input on the webpage.\nPlease check whether you have access to chat.openai.com without logging in via your browser.")
+            self.session_active = False
+            await self.browser.close()
+            return 
         
-        is_gpt_thinking = await self.page.querySelector('.result-thinking')
-        if is_gpt_thinking:
-            await self.page.waitForSelector('.result-thinking', options={'hidden': True})
+        await self.page.type('#prompt-textarea', prompt_text, {'delay': 100})
+        
+        try:
+            await self.page.click('[data-testid="send-button"]')
+        except Exception as e:
+            print(f"Failed to click the send button: {str(e)}")
+        
+        await self.wait_for_and_print_new_response()
 
-        await self.streaming_response()
 
-    async def streaming_response(self):
-        printedLength = 0
-        previousText = ""
-        while True:
-            currentText = await self.page.evaluate('() => { const messages = Array.from(document.querySelectorAll("[data-message-id]")); const lastMessage = messages[messages.length - 1]; return lastMessage ? lastMessage.innerText : ""; }')
-            chunk = currentText[printedLength:]
-            # print response chunk-by-chunk (if streaming = true, which it is by default)
-            if self.streaming: print(chunk, end='', flush=True)
-            printedLength += len(chunk)
+    async def wait_for_and_print_new_response(self):
+        await self.wait_for_initial_response()
+        await self.handle_streaming_response()
 
-            # text hasnt changed, i.e. response is fully printed out
-            if currentText == previousText:
-                # print response in full (if streaming is manually set to false via -ns // --no-streaming)
-                if not self.streaming: print(currentText)
-                break
-            previousText = currentText
+    async def wait_for_initial_response(self):
+        start_time = time.time()
+        timeout = 30
+        while (time.time() - start_time) < timeout:
+            assistant_messages = await self.page.querySelectorAll('div[data-message-author-role="assistant"]')
+            if assistant_messages:
+                last_message = assistant_messages[-1]
+                is_thinking = await last_message.querySelector('.result-thinking')
+                if not is_thinking:
+                    self.last_message_id = await self.page.evaluate('(element) => element.getAttribute("data-message-id")', last_message)
+                    return
             await asyncio.sleep(0.1)
+        print("Timed out waiting for the initial response.")
+
+    async def handle_streaming_response(self):
+        previous_text = ""
+        complete_response = ""
+        new_content_detected = False
+        while not new_content_detected:
+            assistant_messages = await self.page.querySelectorAll('div[data-message-author-role="assistant"]')
+            if assistant_messages:
+                last_message = assistant_messages[-1]
+                current_message_id = await self.page.evaluate('(element) => element.getAttribute("data-message-id")', last_message)
+                
+                if current_message_id == self.last_message_id:
+                    current_text = await self.page.evaluate('(element) => element.textContent', last_message)
+                    if current_text != previous_text:
+                        if self.streaming:
+                            print(current_text[len(previous_text):], end='', flush=True)
+                        else:
+                            complete_response += current_text[len(previous_text):]
+
+                    previous_text = current_text
+                    is_streaming = await last_message.querySelector('.result-streaming')
+                    if not is_streaming:
+                        new_content_detected = True
+                else:
+                    self.last_message_id = current_message_id
+            await asyncio.sleep(0.1)
+        
+        if not self.streaming:
+            print(complete_response.rstrip())
+
 
     async def close(self):
         await self.browser.close()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Headless ChatGPT Access with Interactive Conversation Option')
-    parser.add_argument('-p', '--prompt', type=str, required=True, help='The initial prompt text to send to ChatGPT')
+    parser = argparse.ArgumentParser(description='ChatGPT without login')
+    parser.add_argument('-p', '--prompt', type=str, default="Hello, GPT", help='The initial prompt text to send to ChatGPT')
     parser.add_argument('-ns', '--no-streaming', dest='streaming', action='store_false', help='Disable streaming of ChatGPT responses')
     args = parser.parse_args()
 
     async def main():
         session = GPT(args.prompt, args.streaming)
-        await session.start()
         try:
-            while True:
+            await session.start()
+            while session.session_active:
                 next_prompt = input("\n|>: ")
                 if next_prompt.lower() == 'exit':
                     break
                 await session.handle_prompt(next_prompt)
         except KeyboardInterrupt:
-            pass
-        await session.close()
+            print("Interrupted by user, closing...")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        finally:
+            await session.close()
 
     asyncio.run(main())
