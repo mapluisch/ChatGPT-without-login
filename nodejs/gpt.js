@@ -1,6 +1,5 @@
 const puppeteer = require('puppeteer');
 const { program } = require('commander');
-const readline = require('readline');
 
 class GPT {
     constructor(prompt, streaming = true) {
@@ -8,6 +7,8 @@ class GPT {
         this.streaming = streaming;
         this.browser = null;
         this.page = null;
+        this.sessionActive = true;
+        this.lastMessageId = null;
     }
 
     delay(time) {
@@ -15,7 +16,7 @@ class GPT {
     }
 
     async start() {
-        this.browser = await puppeteer.launch({headless: true});
+        this.browser = await puppeteer.launch({ headless: true });
         this.page = await this.browser.newPage();
         await this.page.setUserAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1");
         await this.page.goto('https://chat.openai.com', { waitUntil: 'networkidle0' });
@@ -23,58 +24,110 @@ class GPT {
     }
 
     async handlePrompt(promptText) {
-        await this.page.waitForSelector('#prompt-textarea', {timeout: 5000});
-        await this.page.type('#prompt-textarea', promptText);
-        await this.page.waitForSelector('[data-testid="send-button"]', {timeout: 5000});
-        await this.page.click('[data-testid="send-button"]');
-        await this.delay(1000);
-
-        let isGptThinking = await this.page.$('.result-thinking');
-        if (isGptThinking) {
-            await this.page.waitForSelector('.result-thinking', { hidden: true });
+        const promptTextarea = await this.page.$('#prompt-textarea');
+        if (!promptTextarea) {
+            console.log("Cannot find the prompt input on the webpage. Please check whether you have access to chat.openai.com without logging in via your browser.");
+            this.sessionActive = false;
+            await this.close();
+            return;
         }
 
-        await this.streamingResponse();
+        await this.page.type('#prompt-textarea', promptText, { delay: 100 });
+
+        try {
+            await this.page.click('[data-testid="send-button"]');
+        } catch (e) {
+            console.log(`Failed to click the send button: ${e}`);
+        }
+
+        await this.waitForAndPrintNewResponse();
     }
 
-    async streamingResponse() {
-        let previousText = "";
-        let printedLength = 0;
-        while (true) {
-            let currentText = await this.page.evaluate(() => {
-                const messages = Array.from(document.querySelectorAll('[data-message-id]'));
-                const lastMessage = messages[messages.length - 1];
-                return lastMessage ? lastMessage.innerText : '';
-            });
+    async waitForAndPrintNewResponse() {
+        await this.waitForInitialResponse();
+        await this.handleStreamingResponse();
+    }
 
-            let chunk = currentText.slice(printedLength);
-            if (this.streaming) process.stdout.write(chunk);
-            printedLength += chunk.length;
-
-            if (currentText === previousText) {
-                if (!this.streaming) console.log(currentText);
-                console.log("\n");
-                break;
+    async waitForInitialResponse() {
+        const timeout = 30000;
+        const startTime = Date.now();
+        while ((Date.now() - startTime) < timeout) {
+            const assistantMessages = await this.page.$$('[data-message-author-role="assistant"]');
+            if (assistantMessages.length > 0) {
+                const lastMessage = assistantMessages[assistantMessages.length - 1];
+                const isThinking = await lastMessage.$('.result-thinking');
+                if (!isThinking) {
+                    this.lastMessageId = await this.page.evaluate(element => element.getAttribute('data-message-id'), lastMessage);
+                    return;
+                }
             }
-            previousText = currentText;
             await this.delay(100);
+        }
+        console.log("Timed out waiting for the initial response.");
+    }
+
+    async handleStreamingResponse() {
+        let previousText = "";
+        let completeResponse = "";
+        let newContentDetected = false;
+        while (!newContentDetected) {
+            const assistantMessages = await this.page.$$('[data-message-author-role="assistant"]');
+            if (assistantMessages.length > 0) {
+                const lastMessage = assistantMessages[assistantMessages.length - 1];
+                const currentMessageId = await this.page.evaluate(element => element.getAttribute('data-message-id'), lastMessage);
+                
+                if (currentMessageId === this.lastMessageId) {
+                    const currentText = await this.page.evaluate(element => element.textContent, lastMessage);
+                    if (currentText !== previousText) {
+                        const newText = currentText.substring(previousText.length);
+                        if (this.streaming) {
+                            process.stdout.write(newText);
+                        } else {
+                            completeResponse += newText;
+                        }
+                    }
+
+                    previousText = currentText;
+                    const isStreaming = await lastMessage.$('.result-streaming');
+                    if (!isStreaming) {
+                        newContentDetected = true;
+                    }
+                } else {
+                    this.lastMessageId = currentMessageId;
+                }
+            }
+            await this.delay(100);
+        }
+        
+        if (!this.streaming) {
+            console.log(completeResponse.trim());
         }
     }
 
     async close() {
-        if (this.browser !== null) {
-            await this.browser.close();
-        }
+        await this.browser.close();
     }
+}
+
+async function readLine(question = '') {
+    return new Promise((resolve) => {
+        process.stdout.write(question);
+        process.stdin.resume();
+        process.stdin.once('data', (data) => {
+            process.stdin.pause();
+            resolve(data.toString().trim());
+        });
+    });
 }
 
 function configureCLI() {
     program
-        .requiredOption('-p, --prompt <type>', 'The initial prompt text to send to ChatGPT')
-        .option('-ns, --no-streaming', 'Disable streaming of ChatGPT responses');
+        .option('-p, --prompt <type>', 'The initial prompt text to send to ChatGPT', "Hello, GPT")
+        .option('-ns, --no-streaming', 'Disable streaming of ChatGPT responses', false);
     program.parse(process.argv);
     
     const options = program.opts();
+    options.streaming = !options.noStreaming;
 
     return options;
 }
@@ -85,25 +138,16 @@ if (require.main === module) {
         const session = new GPT(options.prompt, options.streaming);
         await session.start();
     
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-            prompt: '|>: '
-        });
-
-        rl.prompt();
-    
-        rl.on('line', async (line) => {
+        while (session.sessionActive) {
+            const line = await readLine('\n|>: ');
             if (line.toLowerCase() === 'exit') {
                 await session.close();
-                process.exit(0);
+                break;
             } else {
                 await session.handlePrompt(line);
-                rl.prompt();
             }
-        }).on('close', () => {
-            console.log('Conversation ended.');
-        });
+        }
+        process.exit(0);
     
     })().catch(e => {
         console.error(e);
@@ -111,4 +155,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = {GPT};
+module.exports = { GPT };
