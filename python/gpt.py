@@ -24,7 +24,7 @@ class GPT:
         if prompt_textarea is None:
             print("Cannot find the prompt input on the webpage.\nPlease check whether you have access to chat.openai.com without logging in via your browser.")
             self.session_active = False
-            await self.browser.close()
+            await self.close()
             return 
         
         await self.page.type('#prompt-textarea', prompt_text, {'delay': 100})
@@ -83,7 +83,6 @@ class GPT:
         
         if not self.streaming:
             print(complete_response.rstrip())
-
 
     async def close(self):
         await self.browser.close()
