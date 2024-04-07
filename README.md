@@ -9,9 +9,9 @@
 ## Heads-up
 [OpenAI just announced instant access to ChatGPT 3.5 without signing up](https://openai.com/blog/start-using-chatgpt-instantly); this repo contains scripts in multiple programming languages for programmatic instant access, i.e., headless chats with ChatGPT via https://chat.openai.com (without signing up or requiring API keys).
 
-Instant access is currently rolling out and (based on some quick tests of mine) is currently only available in the US and Canada (IP-based).
+Instant access is currently rolling out and (based on some quick tests of mine) is **currently only available in the US and Canada (IP-based)**.
 
-## Supported Languages
+## Supported Languages (more to come)
 
 - Python
 - JavaScript (Node.js)
@@ -28,39 +28,43 @@ Install it using `pip install pyppeteer` (or `pip3`, depending on your setup).
 ### Usage
 
 #### Calling it from your own script
-With my `gpt.py` in the same directory, you can call it using some prompt using this example:
+With my `gpt.py` in the same directory, you can call it using some prompt using this example (`test_implementation.py`):
 ```python
 import asyncio
 from gpt import GPT
 
 async def run_session():
+    # create gpt instance & send initial prompt
     session = GPT(prompt="Tell me a joke.", streaming=True)
     
     await session.start() 
     
-    # send additional prompts and handle them optionally
-    # await session.handle_prompt("Explain the joke.")
+    # (optional) send additional prompts and handle them
+    print("\n -- asking GPT to explain the joke -- \n")
+    await session.handle_prompt("Explain the joke.")
 
+    # gracefully close the session again
     await session.close()
 
 asyncio.run(run_session())
 ```
 
-The first prompt of a *new* session always takes a bit longer, as the headless browser has to init. Subsequent prompts are handled as fast as you know it from the typical GPT browser UI.
+The first prompt of a *new* session always takes a bit longer, as the headless browser has to init. Subsequent prompts are handled as fast as you'd expect it from the typical GPT browser UI.
 
 #### CLI Arguments
 You can also chat with GPT using CLI; just call `python3 gpt.py` with the following args:
 
-- `-p`, `--prompt` (required)
+- `-p`, `--prompt`
   - the initial prompt text to send to ChatGPT.
   - **type**: `str`
+  - **default**: "Hello, GPT"
   
 - `-ns`, `--no-streaming`
   - if true, the script doesn't print GPT's response in chunks ("streaming"-esque), but rather waits until it is fully typed out before printing it.
   - **type**: bool (`store_true`)
   - **default**: false
 
-A minimal example for a streaming-based conversation would be `python3 gpt.py -p "Hello, GPT"`.
+You can start a streaming-based conversation with `python3 gpt.py`.
 
 ## Node.js
 
@@ -74,7 +78,7 @@ Install both using `npm install puppeteer commander`.
 ### Usage
 
 #### Calling it from your own script
-With `gpt.js` in the same directory, you can call it using some prompt using this example:
+With `gpt.js` in the same directory, you can call it using some prompt using this example (`test_implementation.js`):
 ```javascript
 const { GPT } = require('./gpt.js');
 
@@ -86,8 +90,10 @@ const { GPT } = require('./gpt.js');
         await gptSession.start();
         
         // (optional) send additional prompts and handle them
+        console.log("\n -- asking GPT to explain the joke -- \n")
         await gptSession.handlePrompt("Explain the joke.");
 
+        // gracefully close the session again
         await gptSession.close();
     } catch (error) {
         console.error("Error in GPT session:", error);
@@ -100,16 +106,17 @@ The first prompt of a *new* session always takes a bit longer, as the headless b
 #### CLI Arguments
 You can also chat with GPT using Node CLI; call `node gpt.js` with the following args:
 
-- `-p`, `--prompt` (required)
+- `-p`, `--prompt`
   - the initial prompt text to send to ChatGPT.
   - **type**: `str`
+  - **default**: "Hello, GPT"
   
 - `-ns`, `--no-streaming`
   - if true, the script doesn't print GPT's response in chunks ("streaming"-esque), but rather waits until it is fully typed out before printing it.
   - **type**: bool (`store_true`)
   - **default**: false
 
-A minimal example for a streaming-based conversation would be `node gpt.js -p "Hello, GPT"`.
+You can start a streaming-based conversation with `node gpt.js`.
 
 ## ToDo
 - [x] support response streaming
