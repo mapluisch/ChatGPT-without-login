@@ -21,9 +21,9 @@ Instant access is currently rolling out and (based on some quick tests of mine) 
 ### Setup / Dependencies
 Grab the `gpt.py` script from within the `python` directory.
 
-The script relies on `pyppeteer`, a headless chromium library.
+The script relies on `playwright`, a headless browser library.
 
-Install it using `pip install pyppeteer` (or `pip3`, depending on your setup).
+Install it first using `pip install playwright` (or `pip3`, depending on your setup).
 
 ### Usage
 
@@ -64,6 +64,11 @@ You can also chat with GPT using CLI; just call `python3 gpt.py` with the follow
   - **type**: bool (`store_true`)
   - **default**: false
 
+ - `-x`, `--proxy`
+   - the proxy server to use, e.g., `http://proxyserver:port`.
+   - **type**: `str`
+   - **default**: None
+
 You can start a streaming-based conversation with `python3 gpt.py`.
 
 ## Node.js
@@ -71,9 +76,9 @@ You can start a streaming-based conversation with `python3 gpt.py`.
 ### Setup / Dependencies
 Grab the `gpt.js` script from within the `nodejs` directory.
 
-The Node.js script relies on `puppeteer`, a headless chromium library, and `commander`.
+The Node.js script relies on `playwright`, a headless browser library, and `commander`.
 
-Install both using `npm install puppeteer commander`.
+Install both using `npm install playwright commander`.
 
 ### Usage
 
@@ -115,6 +120,11 @@ You can also chat with GPT using Node CLI; call `node gpt.js` with the following
   - if true, the script doesn't print GPT's response in chunks ("streaming"-esque), but rather waits until it is fully typed out before printing it.
   - **type**: bool (`store_true`)
   - **default**: false
+ 
+- `-x`, `--proxy`
+   - the proxy server to use, e.g., `http://proxyserver:port`.
+   - **type**: `str`
+   - **default**: None
 
 You can start a streaming-based conversation with `node gpt.js`.
 
