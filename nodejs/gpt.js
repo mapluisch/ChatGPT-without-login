@@ -1,10 +1,11 @@
-const puppeteer = require('puppeteer');
+const { firefox } = require('playwright');
 const { program } = require('commander');
 
 class GPT {
-    constructor(prompt, streaming = true) {
+    constructor(prompt, streaming = true, proxy = null) {
         this.prompt = prompt;
         this.streaming = streaming;
+        this.proxy = proxy;
         this.browser = null;
         this.page = null;
         this.sessionActive = true;
@@ -16,10 +17,18 @@ class GPT {
     }
 
     async start() {
-        this.browser = await puppeteer.launch({ headless: true });
-        this.page = await this.browser.newPage();
-        await this.page.setUserAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1");
-        await this.page.goto('https://chat.openai.com', { waitUntil: 'networkidle0' });
+        const launchOptions = { headless: true };
+        if (this.proxy) {
+            launchOptions.proxy = { server: this.proxy };
+        }
+
+        this.browser = await firefox.launch(launchOptions);
+        const contextOptions = {
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1"
+        };
+        const context = await this.browser.newContext(contextOptions);
+        this.page = await context.newPage();
+        await this.page.goto('https://chat.openai.com', { waitUntil: 'networkidle' });
         await this.handlePrompt(this.prompt);
     }
 
@@ -105,6 +114,7 @@ class GPT {
     }
 
     async close() {
+        await this.page.close();
         await this.browser.close();
     }
 }
@@ -123,6 +133,7 @@ async function readLine(question = '') {
 function configureCLI() {
     program
         .option('-p, --prompt <type>', 'The initial prompt text to send to ChatGPT', "Hello, GPT")
+        .option('-x, --proxy <type>', 'Proxy server to use, e.g. http://proxyserver:port')
         .option('-ns, --no-streaming', 'Disable streaming of ChatGPT responses', false);
     program.parse(process.argv);
     
@@ -135,11 +146,11 @@ function configureCLI() {
 if (require.main === module) {
     (async () => {
         const options = configureCLI();
-        const session = new GPT(options.prompt, options.streaming);
+        const session = new GPT(options.prompt, options.streaming, options.proxy);
         await session.start();
     
         while (session.sessionActive) {
-            const line = await readLine('\n|>: ');
+            const line = await readLine('\n►: ');
             if (line.toLowerCase() === 'exit') {
                 await session.close();
                 break;
