@@ -1,6 +1,6 @@
 <div align="center">
   <h1 align="center">Scripts for using ChatGPT without login</h1>
-  <img src="https://github.com/mapluisch/ChatGPT-without-login/assets/31780571/2852ec02-9971-409b-8050-0101c9b2e856">
+  <img src="https://martinpluisch.com/chatgpt-without-login">
   <p align="center"><em>Example for accessing ChatGPT (3.5) without an account or API access via Python. Only for educational purposes.</em></p>
 </div>
 <hr>
@@ -52,7 +52,7 @@ asyncio.run(run_session())
 The first prompt of a *new* session always takes a bit longer, as the headless browser has to init. Subsequent prompts are handled as fast as you'd expect it from the typical GPT browser UI.
 
 #### CLI Arguments
-You can also chat with GPT using CLI; just call `python3 gpt.py` with the following args:
+You can also chat with GPT using CLI; just call `python3 gpt.py` with the following args (all of them are optional):
 
 - `-p`, `--prompt`
   - the initial prompt text to send to ChatGPT.
@@ -68,6 +68,12 @@ You can also chat with GPT using CLI; just call `python3 gpt.py` with the follow
    - the proxy server to use, e.g., `http://proxyserver:port`.
    - **type**: `str`
    - **default**: None
+  
+ - `-st`, `--session-token`
+   - your `__Secure-next-auth.session-token` in order to use your OpenAI account (i.e. to minimize rate limiting, use 4o, etc.)
+   - **type**: `str`
+   - **default**: None  
+
 
 You can start a streaming-based conversation with `python3 gpt.py`.
 
@@ -125,6 +131,11 @@ You can also chat with GPT using Node CLI; call `node gpt.js` with the following
    - the proxy server to use, e.g., `http://proxyserver:port`.
    - **type**: `str`
    - **default**: None
+ 
+ - `-st`, `--session-token`
+   - your `__Secure-next-auth.session-token` in order to use your OpenAI account (i.e. to minimize rate limiting, use 4o, etc.)
+   - **type**: `str`
+   - **default**: None  
 
 You can start a streaming-based conversation with `node gpt.js`.
 
