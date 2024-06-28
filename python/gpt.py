@@ -4,14 +4,16 @@ import argparse
 from playwright.async_api import async_playwright
 
 class GPT:
-    def __init__(self, prompt, streaming=True, proxy=None):
+    def __init__(self, prompt, streaming=True, proxy=None, session_token=None):
         self.prompt = prompt
         self.streaming = streaming
         self.proxy = proxy
+        self.session_token = session_token
         self.browser = None
         self.page = None
         self.session_active = True
         self.last_message_id = None
+        self.message_count = 0
 
     async def start(self):
         async with async_playwright() as p:
@@ -25,8 +27,22 @@ class GPT:
                 'user_agent': "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Mobile/15E148 Safari/604.1"
             }
             context = await self.browser.new_context(**context_options)
+
             self.page = await context.new_page()
-            await self.page.goto('https://chat.openai.com', wait_until='networkidle')
+            await self.page.goto('https://chatgpt.com', wait_until='networkidle')
+
+            if self.session_token:
+                await context.add_cookies([{
+                    'name': '__Secure-next-auth.session-token',
+                    'value': self.session_token,
+                    'domain': '.chatgpt.com',
+                    'path': '/',
+                    'secure': True,
+                    'httpOnly': True,
+                    'sameSite': 'Lax'
+                }])
+
+            await self.page.reload(wait_until='networkidle')
             await self.handle_prompt(self.prompt)
 
             while self.session_active:
@@ -39,15 +55,16 @@ class GPT:
     async def handle_prompt(self, prompt_text):
         prompt_textarea = await self.page.query_selector('#prompt-textarea')
         if prompt_textarea is None:
-            print("Cannot find the prompt input on the webpage.\nPlease check whether you have access to chat.openai.com without logging in via your browser.")
+            print("Cannot find the prompt input on the webpage.\nPlease check whether you have access to chatgpt.com without logging in via your browser.")
             self.session_active = False
             await self.close()
             return 
         
-        await self.page.type('#prompt-textarea', prompt_text, delay=100)
+        await self.page.evaluate(f'document.querySelector("#prompt-textarea").value = "{prompt_text[:-1]}"')
+        await self.page.type('#prompt-textarea', prompt_text[-1])
         
         try:
-            await self.page.click('[data-testid="send-button"]')
+            await self.page.click('[data-testid="fruitjuice-send-button"]')
         except Exception as e:
             print(f"Failed to click the send button: {str(e)}")
         
@@ -61,12 +78,21 @@ class GPT:
         start_time = time.time()
         timeout = 30
         while (time.time() - start_time) < timeout:
-            assistant_messages = await self.page.query_selector_all('div[data-message-author-role="assistant"]')
+            
+            while True:
+                assistant_messages = await self.page.query_selector_all('div[data-message-author-role="assistant"]')
+                current_message_count = len(assistant_messages)
+                if current_message_count > self.message_count:
+                    break
+                await asyncio.sleep(0.1)
+
+
             if assistant_messages:
                 last_message = assistant_messages[-1]
                 is_thinking = await last_message.query_selector('.result-thinking')
                 if not is_thinking:
                     self.last_message_id = await self.page.evaluate('(element) => element.getAttribute("data-message-id")', last_message)
+                    self.message_count = current_message_count
                     return
             await asyncio.sleep(0.1)
         print("Timed out waiting for the initial response.")
@@ -109,10 +135,11 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--prompt', type=str, default="Hello, GPT", help='The initial prompt text to send to ChatGPT')
     parser.add_argument('-x', '--proxy', type=str, help='Proxy server to use, e.g. http://proxyserver:port')
     parser.add_argument('-ns', '--no-streaming', dest='streaming', action='store_false', help='Disable streaming of ChatGPT responses')
+    parser.add_argument('-st', '--session-token', type=str, help='Session token for __Secure-next-auth.session-token cookie')
     args = parser.parse_args()
 
     async def main():
-        session = GPT(args.prompt, args.streaming, args.proxy)
+        session = GPT(args.prompt, args.streaming, args.proxy, args.session_token)
         try:
             await session.start()
         except KeyboardInterrupt:
