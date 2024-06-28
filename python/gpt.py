@@ -64,10 +64,18 @@ class GPT:
         await self.page.type('#prompt-textarea', prompt_text[-1])
         
         try:
-            await self.page.click('[data-testid="fruitjuice-send-button"]')
+            fruitjuice_send_button = await self.page.evaluate('document.querySelector(\'[data-testid="fruitjuice-send-button"]\') !== null')
+            send_button = await self.page.evaluate('document.querySelector(\'[data-testid="send-button"]\') !== null')
+
+            if fruitjuice_send_button:
+                await self.page.click('[data-testid="fruitjuice-send-button"]')
+            elif send_button:
+                await self.page.click('[data-testid="send-button"]')
+            else:
+                print("Neither send button is present")
         except Exception as e:
             print(f"Failed to click the send button: {str(e)}")
-        
+
         await self.wait_for_and_print_new_response()
 
     async def wait_for_and_print_new_response(self):

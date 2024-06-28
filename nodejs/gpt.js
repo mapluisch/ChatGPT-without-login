@@ -71,11 +71,24 @@ class GPT {
         await this.page.type('#prompt-textarea', promptText.slice(-1));
 
         try {
-            await this.page.click('[data-testid="fruitjuice-send-button"]');
+            const fruitjuiceSendButton = await this.page.evaluate(() => {
+                return document.querySelector('[data-testid="fruitjuice-send-button"]') !== null;
+            });
+            const sendButton = await this.page.evaluate(() => {
+                return document.querySelector('[data-testid="send-button"]') !== null;
+            });
+        
+            if (fruitjuiceSendButton) {
+                await this.page.click('[data-testid="fruitjuice-send-button"]');
+            } else if (sendButton) {
+                await this.page.click('[data-testid="send-button"]');
+            } else {
+                console.log("Neither send button is present");
+            }
         } catch (e) {
             console.log(`Failed to click the send button: ${e}`);
         }
-
+        
         await this.waitForAndPrintNewResponse();
     }
 
